@@ -5,48 +5,65 @@ const host=document.querySelector('#scene'),scene=new THREE.Scene();scene.backgr
 const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.shadowMap.enabled=true;host.appendChild(renderer.domElement);
 const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,.8,0);controls.enableDamping=true;controls.minDistance=3;controls.maxDistance=12;
 scene.add(new THREE.HemisphereLight(0xffe9cf,0x33201c,2.4));const light=new THREE.DirectionalLight(0xffd8a4,3);light.position.set(3,7,5);light.castShadow=true;scene.add(light);
-const wood=new THREE.MeshStandardMaterial({color:0x63301c,roughness:.38}),gold=new THREE.MeshStandardMaterial({color:0xc39a4b,metalness:.8,roughness:.24}),dark=new THREE.MeshStandardMaterial({color:0x281711}),velvet=new THREE.MeshStandardMaterial({color:0x591f34,roughness:1});
 
-// Procedural mahogany grain: no external image assets required.
-const grainCanvas=document.createElement('canvas');grainCanvas.width=512;grainCanvas.height=512;
-const gc=grainCanvas.getContext('2d');gc.fillStyle='#85482c';gc.fillRect(0,0,512,512);
-for(let i=0;i<950;i++){const x=Math.random()*512,y=Math.random()*512;gc.strokeStyle=i%5===0?'rgba(29,10,7,.16)':'rgba(232,153,91,.09)';gc.lineWidth=Math.random()*2+.25;gc.beginPath();gc.moveTo(x,y);gc.bezierCurveTo(x+Math.random()*8,y+20,x-Math.random()*8,y+65,x+Math.random()*10,y+110);gc.stroke()}
-const grainTexture=new THREE.CanvasTexture(grainCanvas);grainTexture.wrapS=grainTexture.wrapT=THREE.RepeatWrapping;grainTexture.colorSpace=THREE.SRGBColorSpace;
-wood.map=grainTexture;wood.color.set(0xffffff);wood.roughness=.43;
-const agedBrass=new THREE.MeshStandardMaterial({color:0x9b753b,metalness:.76,roughness:.38});
-const inlay=new THREE.MeshStandardMaterial({color:0x28120d,roughness:.42});
-function curve(parent,points,r,material){const path=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));const m=new THREE.Mesh(new THREE.TubeGeometry(path,Math.max(16,points.length*7),r,7,false),material);parent.add(m);return m}
-function rosette(parent,cx,cy,cz,scale,vertical=false){const g=new THREE.Group();g.position.set(cx,cy,cz);if(vertical)g.rotation.x=Math.PI/2;parent.add(g);
-for(let i=0;i<8;i++){const a=i*Math.PI/4;const pts=[];for(let j=0;j<=14;j++){const t=j/14*Math.PI*2;pts.push([Math.cos(a)*scale*.24+Math.cos(t)*scale*.19,0,Math.sin(a)*scale*.24+Math.sin(t)*scale*.10])}curve(g,pts,.012,agedBrass)}
-ball(g,scale*.1,0,.015,0,gold);return g}
-function block(parent,w,h,d,x,y,z,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m}
-function ball(parent,r,x,y,z,mat){const m=new THREE.Mesh(new THREE.SphereGeometry(r,14,10),mat);m.position.set(x,y,z);parent.add(m)}
-function rim(parent,w,d,y){for(const z of [-d/2,d/2])block(parent,w,.05,.055,0,y,z,gold);for(const x of [-w/2,w/2])block(parent,.055,.05,d,x,y,0,gold)}
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x332920}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
-const base=new THREE.Group();scene.add(base);block(base,3.4,.85,2.3,0,.75,0,wood);block(base,3.12,.06,2.04,0,1.2,0,velvet);rim(base,3.45,2.35,.34);rim(base,3.45,2.35,1.16);
-for(const x of [-1.45,1.45])for(const z of [-.91,.91]){block(base,.25,.25,.25,x,.2,z,dark);ball(base,.13,x,.1,z,gold)}
-block(base,.43,.34,.08,0,.76,1.19,gold);block(base,.22,.22,.1,0,.76,1.25,dark);ball(base,.075,0,.76,1.32,gold);
-const hinge=new THREE.Group();hinge.position.set(0,1.2,-1.15);base.add(hinge);block(hinge,3.5,.42,2.35,0,.21,1.15,wood);const lidTrim=new THREE.Group();lidTrim.position.z=1.15;hinge.add(lidTrim);rim(lidTrim,3.38,2.23,.43);
-
-// Layered edge molding and decorative lid panel, all parented to the lid pivot.
-const molding=new THREE.Group();molding.position.z=1.15;hinge.add(molding);
-rim(molding,3.14,1.99,.457);rim(molding,2.91,1.77,.465);
-for(const x of [-1.52,1.52])for(const z of [-.99,.99]){ball(molding,.085,x,.48,z,agedBrass)}
-rosette(hinge,-1.13,.48,.39,.72);rosette(hinge,1.13,.48,.39,.72);
-rosette(hinge,-1.13,.48,1.91,.72);rosette(hinge,1.13,.48,1.91,.72);
-for(const x of [-1.49,1.49])for(const z of [.28,2.02]){block(hinge,.16,.015,.24,x,.44,z,agedBrass)}
-// Carved-looking floral scrollwork in brass on the front face.
-for(const sign of [-1,1]){const pts=[];for(let i=0;i<=26;i++){const t=i/26*Math.PI*1.8;pts.push([sign*(.52+.3*Math.cos(t)),.72+.15*Math.sin(t),1.202])}curve(base,pts,.017,agedBrass)}
-for(const x of [-1.47,1.47]){block(base,.18,.64,.025,x,.77,1.164,agedBrass);ball(base,.085,x,1.05,1.18,gold)}
-// Velvet-lined trays and compartments, visible when the lid opens.
-for(const x of [-.76,.76]){block(base,1.39,.075,1.65,x,1.25,0,velvet)}
-block(base,.045,.15,1.77,0,1.3,0,agedBrass);
-for(const x of [-1.48,1.48]){const h=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,.3,16),agedBrass);h.rotation.z=Math.PI/2;h.position.set(x,1.2,-1.16);base.add(h)}
-const ring=new THREE.Mesh(new THREE.TorusGeometry(.45,.06,12,60),gold);ring.rotation.x=-Math.PI/2;ring.position.set(0,.446,1.15);hinge.add(ring);for(let i=0;i<12;i++){const a=i*Math.PI/6;ball(hinge,.06,Math.cos(a)*.35,.45,1.15+Math.sin(a)*.35,gold)}
-for(const x of [-1.4,1.4])for(const z of [.27,2.02])ball(hinge,.12,x,.46,z,gold);
-const canvas=document.createElement('canvas');canvas.width=512;canvas.height=384;const ctx=canvas.getContext('2d',{willReadFrequently:true}),texture=new THREE.CanvasTexture(canvas);const dust=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.05),new THREE.MeshStandardMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide}));dust.rotation.x=-Math.PI/2;dust.position.set(0,.462,1.15);hinge.add(dust);
+const wood=new THREE.MeshStandardMaterial({color:0x53271a,roughness:.36});
+const darkWood=new THREE.MeshStandardMaterial({color:0x2a120e,roughness:.45});
+const gold=new THREE.MeshStandardMaterial({color:0xb89552,metalness:.78,roughness:.31});
+const agedBrass=new THREE.MeshStandardMaterial({color:0x826337,metalness:.72,roughness:.42});
+const velvet=new THREE.MeshStandardMaterial({color:0x541a2b,roughness:1});
+const black=new THREE.MeshStandardMaterial({color:0x180e0c,roughness:.5});
+const grain=document.createElement('canvas');grain.width=512;grain.height=512;
+const g=grain.getContext('2d');g.fillStyle='#6c3323';g.fillRect(0,0,512,512);
+for(let i=0;i<1700;i++){const x=Math.random()*512,y=Math.random()*512;g.strokeStyle=i%4===0?'rgba(15,4,2,.10)':'rgba(204,115,66,.07)';g.lineWidth=.4+Math.random()*1.5;g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+2,y+24,x-3,y+64,x+3,y+115);g.stroke()}
+const grainTex=new THREE.CanvasTexture(grain);grainTex.colorSpace=THREE.SRGBColorSpace;wood.map=grainTex;wood.color.set(0xffffff);
+function block(p,w,h,d,x,y,z,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;p.add(m);return m}
+function ball(p,r,x,y,z,mat){const m=new THREE.Mesh(new THREE.SphereGeometry(r,12,8),mat);m.position.set(x,y,z);m.castShadow=true;p.add(m);return m}
+function tube(p,pts,r,mat){const path=new THREE.CatmullRomCurve3(pts.map(q=>new THREE.Vector3(...q)));const m=new THREE.Mesh(new THREE.TubeGeometry(path,Math.max(18,pts.length*5),r,6,false),mat);p.add(m);return m}
+function trim(p,w,d,y,mat=gold,t=.035){for(const z of [-d/2,d/2])block(p,w,t,t,0,y,z,mat);for(const x of [-w/2,w/2])block(p,t,t,d,x,y,0,mat)}
+function leaf(p,x,y,z,angle,s=1){const shape=new THREE.Shape();shape.moveTo(0,0);shape.bezierCurveTo(-.13*s,.09*s,-.15*s,.25*s,0,.39*s);shape.bezierCurveTo(.15*s,.25*s,.13*s,.09*s,0,0);const mesh=new THREE.Mesh(new THREE.ShapeGeometry(shape,10),agedBrass);mesh.rotation.x=-Math.PI/2;mesh.rotation.z=angle;mesh.position.set(x,y,z);p.add(mesh)}
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x30241f,roughness:1}));floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+const base=new THREE.Group();scene.add(base);
+block(base,3.35,.83,2.25,0,.73,0,wood);
+block(base,3.18,.045,2.08,0,1.175,0,darkWood);
+block(base,3.03,.018,1.93,0,1.205,0,velvet);
+trim(base,3.36,2.26,.34,agedBrass,.027);trim(base,3.36,2.26,1.14,agedBrass,.028);
+for(const x of [-1.5,1.5])for(const z of [-.94,.94]){block(base,.23,.2,.23,x,.21,z,darkWood);block(base,.18,.065,.18,x,.12,z,agedBrass)}
+// Inset front panels, carved frames and a central escutcheon.
+for(const x of [-.92,.92]){block(base,1.34,.57,.012,x,.77,1.132,darkWood);block(base,1.26,.49,.018,x,.77,1.143,wood)}
+for(const x of [-1.58,1.58])block(base,.05,.7,.055,x,.76,1.12,agedBrass);
+block(base,.37,.37,.055,0,.78,1.167,agedBrass);
+block(base,.25,.27,.062,0,.78,1.21,darkWood);
+const keyhole=ball(base,.045,0,.81,1.26,gold);keyhole.scale.set(.62,1.3,.2);
+tube(base,[[0,.79,1.28],[0,.71,1.28]],.015,gold);
+// The lid is built in local coordinates centered at the rear hinge.
+const hinge=new THREE.Group();hinge.position.set(0,1.145,-1.125);base.add(hinge);
+block(hinge,3.35,.34,2.25,0,.17,1.125,wood);
+const lidDetails=new THREE.Group();lidDetails.position.z=1.125;hinge.add(lidDetails);
+// Inlaid recessed center, surrounded by stepped molding that stays inside the lid perimeter.
+block(lidDetails,2.93,.013,1.83,0,.349,0,darkWood);
+block(lidDetails,2.79,.016,1.69,0,.36,0,wood);
+trim(lidDetails,3.23,2.13,.351,agedBrass,.025);
+trim(lidDetails,2.88,1.78,.375,gold,.023);
+trim(lidDetails,2.61,1.51,.382,agedBrass,.012);
+// Decorative central oval cartouche, not floating spherical studs.
+const oval=new THREE.Mesh(new THREE.TorusGeometry(.38,.032,9,56),gold);
+oval.rotation.x=-Math.PI/2;oval.scale.set(1.45,.82,1);oval.position.set(0,.403,0);lidDetails.add(oval);
+const center=new THREE.Mesh(new THREE.CircleGeometry(.29,48),agedBrass);center.rotation.x=-Math.PI/2;center.scale.set(1.48,.9,1);center.position.set(0,.396,0);lidDetails.add(center);
+for(const x of [-1,1])for(const z of [-.52,.52]){leaf(lidDetails,x*.91,.395,z, x*z>0?.7:-.7,.8);leaf(lidDetails,x*.91,.396,z,x*z>0?2.2:-2.2,.55)}
+for(const side of [-1,1]){const pts=[];for(let i=0;i<=24;i++){const a=i/24*Math.PI*1.65;pts.push([side*(.55+.23*Math.cos(a)),.396,.24*Math.sin(a)])}tube(lidDetails,pts,.014,agedBrass)}
+// Narrow brass hinge barrels and a velvet underside panel.
+for(const x of [-1.14,1.14]){const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.28,12),agedBrass);barrel.rotation.z=Math.PI/2;barrel.position.set(x,.015,0);hinge.add(barrel)}
+block(hinge,2.93,.012,1.85,0,-.006,1.125,velvet);
+// Compartments are inset inside the body rather than resting above it.
+for(const x of [-.76,.76])block(base,1.36,.012,1.76,x,1.236,0,velvet);
+block(base,.035,.09,1.78,0,1.25,0,agedBrass);
+// Dust remains brushable, but is a translucent aged film so details remain legible.
+const canvas=document.createElement('canvas');canvas.width=512;canvas.height=384;
+const ctx=canvas.getContext('2d',{willReadFrequently:true}),texture=new THREE.CanvasTexture(canvas);
+const dust=new THREE.Mesh(new THREE.PlaneGeometry(2.7,1.59),new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+dust.rotation.x=-Math.PI/2;dust.position.set(0,.411,1.125);hinge.add(dust);
 function update(){texture.needsUpdate=true;const data=ctx.getImageData(0,0,512,384).data;let dirty=0,total=0;for(let i=3;i<data.length;i+=64){total++;if(data[i]>45)dirty++}document.querySelector('#status').textContent='Dust remaining: '+Math.round(dirty/total*100)+'%'}
-function reset(){ctx.clearRect(0,0,512,384);ctx.fillStyle='rgba(125,112,96,.94)';ctx.fillRect(0,0,512,384);for(let i=0;i<1900;i++){ctx.fillStyle='rgba(195,177,145,'+(Math.random()*.4)+')';ctx.beginPath();ctx.arc(Math.random()*512,Math.random()*384,Math.random()*5+1,0,7);ctx.fill()}update()}reset();
+function reset(){ctx.clearRect(0,0,512,384);ctx.fillStyle='rgba(117,103,84,.54)';ctx.fillRect(0,0,512,384);for(let i=0;i<1900;i++){ctx.fillStyle='rgba(195,177,145,'+(Math.random()*.4)+')';ctx.beginPath();ctx.arc(Math.random()*512,Math.random()*384,Math.random()*5+1,0,7);ctx.fill()}update()}reset();
 let opened=false,brush=false,down=false;document.querySelector('#lid').onclick=()=>{opened=!opened;document.querySelector('#lid').textContent=opened?'Close lid':'Open lid'};document.querySelector('#brush').onclick=()=>{brush=!brush;controls.enabled=!brush;document.querySelector('#brush').textContent='Cleaning brush: '+(brush?'On':'Off')};document.querySelector('#reset').onclick=reset;
 const ray=new THREE.Raycaster(),point=new THREE.Vector2();let ticks=0;function clean(e){if(!brush||!down)return;const r=renderer.domElement.getBoundingClientRect();point.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(point,camera);const hit=ray.intersectObject(dust)[0];if(!hit?.uv)return;const x=hit.uv.x*512,y=(1-hit.uv.y)*384;ctx.save();ctx.globalCompositeOperation='destination-out';ctx.beginPath();ctx.arc(x,y,33,0,Math.PI*2);ctx.fill();ctx.restore();texture.needsUpdate=true;if(++ticks%3===0)update()}
 renderer.domElement.addEventListener('pointerdown',e=>{down=true;if(brush){renderer.domElement.setPointerCapture(e.pointerId);clean(e)}});renderer.domElement.addEventListener('pointermove',clean);renderer.domElement.addEventListener('pointerup',()=>{down=false;if(brush)update()});renderer.domElement.addEventListener('pointercancel',()=>down=false);
