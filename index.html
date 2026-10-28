@@ -13,7 +13,7 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStanda
 const base=new THREE.Group();scene.add(base);block(base,3.4,.85,2.3,0,.75,0,wood);block(base,3.12,.06,2.04,0,1.2,0,velvet);rim(base,3.45,2.35,.34);rim(base,3.45,2.35,1.16);
 for(const x of [-1.45,1.45])for(const z of [-.91,.91]){block(base,.25,.25,.25,x,.2,z,dark);ball(base,.13,x,.1,z,gold)}
 block(base,.43,.34,.08,0,.76,1.19,gold);block(base,.22,.22,.1,0,.76,1.25,dark);ball(base,.075,0,.76,1.32,gold);
-const hinge=new THREE.Group();hinge.position.set(0,1.2,-1.15);base.add(hinge);block(hinge,3.5,.42,2.35,0,.21,1.15,wood);rim(hinge,3.38,2.23,.43);
+const hinge=new THREE.Group();hinge.position.set(0,1.2,-1.15);base.add(hinge);block(hinge,3.5,.42,2.35,0,.21,1.15,wood);const lidTrim=new THREE.Group();lidTrim.position.z=1.15;hinge.add(lidTrim);rim(lidTrim,3.38,2.23,.43);
 const ring=new THREE.Mesh(new THREE.TorusGeometry(.45,.06,12,60),gold);ring.rotation.x=-Math.PI/2;ring.position.set(0,.446,1.15);hinge.add(ring);for(let i=0;i<12;i++){const a=i*Math.PI/6;ball(hinge,.06,Math.cos(a)*.35,.45,1.15+Math.sin(a)*.35,gold)}
 for(const x of [-1.4,1.4])for(const z of [.27,2.02])ball(hinge,.12,x,.46,z,gold);
 const canvas=document.createElement('canvas');canvas.width=512;canvas.height=384;const ctx=canvas.getContext('2d',{willReadFrequently:true}),texture=new THREE.CanvasTexture(canvas);const dust=new THREE.Mesh(new THREE.PlaneGeometry(3.2,2.05),new THREE.MeshStandardMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide}));dust.rotation.x=-Math.PI/2;dust.position.set(0,.462,1.15);hinge.add(dust);
